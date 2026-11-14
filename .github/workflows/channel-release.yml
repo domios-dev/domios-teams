@@ -1,0 +1,57 @@
+name: Team channel
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.22.0
+      - name: Install pinned ATP validator
+        run: |
+          curl --fail --location --max-time 120 https://github.com/domios-dev/agentic-team-protocol/releases/download/validator-2026.11.11/atp-validate-x86_64-unknown-linux-musl -o "$RUNNER_TEMP/atp-validate"
+          echo "6adfa021bda8bd56a46805025c424d75891f523a44af238f8b1572aff082dc7d  $RUNNER_TEMP/atp-validate" | sha256sum --check
+          chmod +x "$RUNNER_TEMP/atp-validate"
+      - name: Validate packages and index
+        run: node scripts/channel.mjs validate . "$RUNNER_TEMP/atp-validate"
+      - name: Package and validate the committed archive
+        run: node scripts/channel.mjs package "$GITHUB_SHA" dist "$RUNNER_TEMP/atp-validate"
+
+  publish:
+    needs: validate
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/master' && github.repository == 'domios-dev/domios-teams' && github.actor == 'rollacode' && github.triggering_actor == 'rollacode'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    concurrency:
+      group: domios-teams-channel-publication
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.22.0
+      - name: Install pinned ATP validator
+        run: |
+          curl --fail --location --max-time 120 https://github.com/domios-dev/agentic-team-protocol/releases/download/validator-2026.11.11/atp-validate-x86_64-unknown-linux-musl -o "$RUNNER_TEMP/atp-validate"
+          echo "6adfa021bda8bd56a46805025c424d75891f523a44af238f8b1572aff082dc7d  $RUNNER_TEMP/atp-validate" | sha256sum --check
+          chmod +x "$RUNNER_TEMP/atp-validate"
+      - name: Publish verified master history and read back anonymous assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/channel.mjs publish "$GITHUB_SHA" "$RUNNER_TEMP/atp-validate"

@@ -13,19 +13,19 @@
     {
       "name": "dev.domios/video-studio",
       "path": "video-studio",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "minDomios": "1.20.0"
     },
     {
       "name": "dev.domios/design-studio",
       "path": "design-studio",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "minDomios": "1.20.0"
     },
     {
       "name": "dev.domios/marketing-studio",
       "path": "marketing-studio",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "minDomios": "1.20.0"
     }
   ]
